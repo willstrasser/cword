@@ -1,0 +1,193 @@
+<html>
+<head>
+	<title>C-Word</title>
+    <script src="http://fb.me/react-with-addons-0.12.2.js"></script>
+    <script src="http://fb.me/JSXTransformer-0.12.2.js"></script>
+    <script src="http://code.jquery.com/jquery-1.10.0.min.js"></script>
+    <script src="http://underscorejs.org/underscore-min.js"/></script>
+    <script src="https://cdn.socket.io/socket.io-1.2.0.js"></script>
+    <script src="model.js"></script>
+    <script src="prepModel.js"></script>
+    <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+    <div id="content"></div>
+    <script type="text/jsx">
+        var socket = io();
+        puz = prepModel(puz);
+
+        var Puzzle = React.createClass({
+            getInitialState: function() {
+                return {
+                    curClue:this.props.puzzle.clues.across[0]
+                };
+            },
+            setCurClue:function(newClue){
+                this.setState({curClue:newClue});
+
+            },
+            render:function(){
+                return(
+                    <div className="puzzle">
+                        <h6>{this.props.puzzle.title}</h6>
+                        <PuzzleBoard 
+                            onClueChange={this.setCurClue}
+                            curClue={this.state.curClue} 
+                            puzzle={this.props.puzzle}/>
+                        <ClueBoard curClue={this.state.curClue} clues={this.props.puzzle.clues}/>
+                    </div>
+                )
+            }
+        });
+
+        var ClueBoard = React.createClass({
+            render:function(){
+                return(
+                    <div className="clueboard">
+                        <small>{this.props.curClue.cluenum} {this.props.curClue.dir}</small><br/>{this.props.curClue.cluestr}
+                    </div>
+                )
+            }
+        });
+
+    	var PuzzleBoard = React.createClass({
+    		getInitialState: function() {
+                _this = this;
+                socket.on('updateAnswer', function(newAnswers){
+                    var count = 0;
+                    _.each(_this.refs,function(tile){
+                        tile.setState({playerAnswer:newAnswers[count]});
+                        count++;
+                    });
+                });
+
+				return {
+                    focusedTile:this.refs['t'+this.props.puzzle.clues.across[0].tiles[0]],
+                    isVertical:false
+                };
+			},
+            sendPlayerAnswer:function(){
+                var playerAnswers=[];
+                _.each(this.refs,function(tile){
+                    playerAnswers.push(tile.state.playerAnswer);
+                })
+                socket.emit('playerAnswer', playerAnswers);
+            },
+            nextTile:function(tile){
+                var next = this.refs['t'+(tile.props.keya+(this.state.isVertical?15:1))];
+                while(next && next.state.playerAnswer!==""){
+                    if(next.state.playerAnswer==='.') next = this.nextWord(next);
+                    else next = this.nextTile(next);
+                }
+                if(!next) next = this.nextWord(tile);
+                if(!next) next = this.refs['t'+this.props.puzzle.clues.across[0].tiles[0]];
+                return next;
+            },
+            nextWord:function(tile){
+                var curClues = this.props.puzzle.clues[this.state.isVertical?'down':'across'];
+                var nextClueKey = this.props.curClue.key+1;
+                return this.refs['t'+curClues[nextClueKey].tiles[0]];
+            },
+			autoForwardFocus: function(){
+				var newFocus = this.nextTile(this.state.focusedTile);
+                this.props.onClueChange(this.refs['t'+newFocus.props.keya].props.gridnum.clues[(this.state.isVertical?1:0)]);
+                this.setState({focusedTile:newFocus});
+    			newFocus.setFocus();
+                this.sendPlayerAnswer();
+			},
+            onTileClick:function(clickedTile){
+                if(this.state.focusedTile===clickedTile){
+                    // console.log('flipped');
+                    this.setState({isVertical:!this.state.isVertical});
+                }
+                this.props.onClueChange(clickedTile.props.gridnum.clues[(this.state.isVertical?1:0)]);
+                this.setState({focusedTile:clickedTile});
+            },
+    		render:function(){
+    			var n=-1;
+                var isClueStart;
+                var _this = this;
+    			var tiles = _.zip(this.props.puzzle.grid,this.props.puzzle.gridnums).map(function(tile){
+    				n++;
+                    isClueStart = tile[1].gridnum!="0";
+                    tile[1].gridnum=isClueStart?tile[1].gridnum:'';
+                    var highlighted = _.contains(_this.props.curClue.tiles,n);
+    				if(tile[0]!=='.'){return(
+    					<Tile ref={'t'+n} 
+                            keya={n}
+                            highlighted={highlighted}
+                            answer={tile[0]}
+                            isClueStart={isClueStart}
+                            gridnum={tile[1]} 
+                            onLetterChange={_this.autoForwardFocus}
+                            onTileClick={_this.onTileClick}/>
+    				);}
+    				else return(
+                        <BlackTile ref={'t'+n} 
+                            keya={n}
+                            onSetFocus={_this.autoForwardFocus}/>);
+    			});
+    			return (
+    				<div className="puzzleBoard">
+    					{tiles}
+    				</div>
+    			)
+    		}
+    	});
+
+    	var BlackTile = React.createClass({
+            getInitialState: function() {
+                return {playerAnswer:'.'};
+            },
+    		render:function(){
+    			return(
+    				<div className="tile black"></div>
+    			);
+    		}
+    	});
+
+    	var Tile = React.createClass({
+    		getInitialState: function() {
+				return {playerAnswer:''};
+			},
+    		handleChange:function(event){
+    			this.setState({playerAnswer:event.target.value.toUpperCase()}, this.props.onLetterChange);
+    		},
+    		setFocus:function(){
+    			if(this.refs.tileInput.getDOMNode()!=document.activeElement){
+                    this.refs.tileInput.getDOMNode().focus();
+                }
+    		},
+            onClick:function(){
+                this.props.onTileClick(this);
+                if(this.state.playerAnswer!==""){
+                    this.refs.tileInput.getDOMNode().select();
+                }
+            },
+            onFocus:function(){
+            },
+    		render:function(){
+                var cx = React.addons.classSet;
+                var classes = cx({
+                    'tile': true,
+                    'highlighted': this.props.highlighted
+                });
+    			var value = this.state.playerAnswer;
+                
+    			return(
+    				<div onClick={this.onClick} className={classes}>
+    				<span className="gridnum">{this.props.gridnum.gridnum}</span>
+    				<div className="letter-holder">
+    					<input ref="tileInput" onFocus={this.onFocus} onChange={this.handleChange} maxLength="1" value={value}/>
+    				</div>
+    				</div>
+    			);
+    		}
+    	});
+    	React.render(
+    		<Puzzle puzzle={puz} />,
+    		document.getElementById('content')
+    	);
+    </script>
+</body>
+</html>
