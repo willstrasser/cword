@@ -12,14 +12,6 @@ app.route('/').get(function(req, res, next){
   res.sendFile(path.join(__dirname,'index.html'));
 });
 
-
-// io.on('connection', function(socket){
-//   console.log('a user connected');
-//   socket.on('disconnect', function(){
-//     console.log('user disconnected');
-//   });
-// });
-
 io.on('connection', function(socket){
   socket.on('playerAnswer', function(msg){
   	console.log('yooooo');
@@ -27,6 +19,6 @@ io.on('connection', function(socket){
   });
 });
 
-http.listen(3000, function(){
+http.listen(app.get('port'), function(){
   console.log('listening on *:3000');
 });
