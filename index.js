@@ -96,6 +96,7 @@ io.on('connection', function(socket){
 	socket.on('playerAnswer', function(update){
 		console.log('socket.id',socket.id);
 		myBoard = replaceOneChar(myBoard,update[1],update[0]);
+		update[1] = update[1]!=' ';
 		socket.broadcast.emit('opUpdate', update);
 	});
 });

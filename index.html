@@ -53,7 +53,7 @@
     		getInitialState: function() {
                 _this = this;
                 socket.on('opUpdate', function(update){
-                    _this.refs['t'+(update[0]-1)].setState({opAnswer:true});
+                    _this.refs['t'+(update[0]-1)].setState({opAnswer:update[1]});
                 });
                 $('html').keyup(function(e){
                     switch(e.keyCode){
