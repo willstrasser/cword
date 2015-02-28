@@ -52,24 +52,59 @@
     	var PuzzleBoard = React.createClass({
     		getInitialState: function() {
                 _this = this;
-                socket.on('updateAnswer', function(update){
-                    console.log(update);
-                    _this.refs['t'+(update[0]-1)].setState({playerAnswer:update[1]});
+                socket.on('opUpdate', function(update){
+                    _this.refs['t'+(update[0]-1)].setState({opAnswer:true});
                 });
-                // $(window).keyPress(function(e){
-                //     console.log(e)
-                // });
+                $('html').keyup(function(e){
+                    switch(e.keyCode){
+                        case 8: _this.clearCurTile(); break;
+                        case 9: _this.moveFocusNextWord(); break;
+                        case 40: _this.moveFocusDown(); break;
+                        case 38: _this.moveFocusUp(); break;
+                        case 37: _this.moveFocusLeft(); break;
+                        case 39: _this.moveFocusRight(); break;
+                    }
+                });
 				return {
                     focusedTile:this.refs['t'+this.props.puzzle.clues.across[0].tiles[0]],
                     isVertical:false
                 };
 			},
+            clearCurTile:function(){
+                this.state.focusedTile.clearValue();
+                this.state.isVertical?this.moveFocusUp():this.moveFocusLeft();
+            },
+            moveFocusNextWord:function(){
+                // var newFocus = this.nextWord(this.state.focusedTile);
+                // this.props.onClueChange(newFocus.props.gridnum.clues[(this.state.isVertical?1:0)]);
+                // this.setState({newFocus:nextWordTile});
+                // newFocus.setFocus();
+            },
+            moveFocusUp:function(){
+                var newFocus = this.refs['t'+(this.state.focusedTile.props.keya-15)];
+                this.props.onClueChange(newFocus.props.gridnum.clues[(this.state.isVertical?1:0)]);
+                this.setState({focusedTile:newFocus});
+                newFocus.setFocus(this.moveFocusUp);
+            },
+            moveFocusDown:function(){
+                var newFocus = this.refs['t'+(this.state.focusedTile.props.keya+15)];
+                this.props.onClueChange(newFocus.props.gridnum.clues[(this.state.isVertical?1:0)]);
+                this.setState({focusedTile:newFocus});
+                newFocus.setFocus(this.moveFocusDown);
+            },
+            moveFocusLeft:function(){
+                var newFocus = this.refs['t'+(this.state.focusedTile.props.keya-1)];
+                this.props.onClueChange(newFocus.props.gridnum.clues[(this.state.isVertical?1:0)]);
+                this.setState({focusedTile:newFocus});
+                newFocus.setFocus(this.moveFocusLeft);
+            },
+            moveFocusRight:function(){
+                var newFocus = this.refs['t'+(this.state.focusedTile.props.keya+1)];
+                this.props.onClueChange(newFocus.props.gridnum.clues[(this.state.isVertical?1:0)]);
+                this.setState({focusedTile:newFocus});
+                newFocus.setFocus(this.moveFocusRight);
+            },
             sendPlayerAnswer:function(){
-                // var playerAnswers=[];
-                // _.each(this.refs,function(tile){
-                    // playerAnswers.push(tile.state.playerAnswer||' ');
-                // })
-                // socket.emit('playerAnswer', playerAnswers.join(''));/
             },
             nextTile:function(tile){
                 var next = this.refs['t'+(tile.props.keya+(this.state.isVertical?15:1))];
@@ -88,10 +123,9 @@
             },
 			autoForwardFocus: function(){
 				var newFocus = this.nextTile(this.state.focusedTile);
-                this.props.onClueChange(this.refs['t'+newFocus.props.keya].props.gridnum.clues[(this.state.isVertical?1:0)]);
+                this.props.onClueChange(newFocus.props.gridnum.clues[(this.state.isVertical?1:0)]);
                 this.setState({focusedTile:newFocus});
     			newFocus.setFocus();
-                this.sendPlayerAnswer();
 			},
             onTileClick:function(clickedTile){
                 if(this.state.focusedTile===clickedTile){
@@ -122,7 +156,7 @@
     				else return(
                         <BlackTile ref={'t'+n} 
                             keya={n}
-                            onSetFocus={_this.autoForwardFocus}/>);
+                            onSetFocus={_this.moveFocusRight}/>);
     			});
     			return (
     				<div className="puzzleBoard">
@@ -136,6 +170,9 @@
             getInitialState: function() {
                 return {playerAnswer:'.'};
             },
+            setFocus:function(callAgain){
+                callAgain();
+            },
     		render:function(){
     			return(
     				<div className="tile black"></div>
@@ -145,17 +182,22 @@
 
     	var Tile = React.createClass({
     		getInitialState: function() {
-				return {playerAnswer:this.props.initial};
+				return {playerAnswer:this.props.initial, opAnswer:false};
 			},
+            clearValue:function(){
+                this.refs.tileInput.getDOMNode().value = '';
+            },
     		handleChange:function(event){
-    			this.setState({playerAnswer:event.target.value.toUpperCase()}, function(){
+                var val = event.target.value || ' ';
+    			this.setState({playerAnswer:val.toUpperCase()}, function(){
                     socket.emit('playerAnswer', [this.props.keya+1,this.state.playerAnswer]);
-                    this.props.onLetterChange.call();
+                    if(val!=' ') this.props.onLetterChange.call();
                 });
     		},
     		setFocus:function(){
     			if(this.refs.tileInput.getDOMNode()!=document.activeElement){
                     this.refs.tileInput.getDOMNode().focus();
+                    this.refs.tileInput.getDOMNode().select();
                 }
     		},
             onClick:function(){
@@ -170,10 +212,10 @@
                 var cx = React.addons.classSet;
                 var classes = cx({
                     'tile': true,
-                    'highlighted': this.props.highlighted
+                    'highlighted': this.props.highlighted,
+                    'op-filled': this.state.opAnswer
                 });
     			var value = this.state.playerAnswer;
-                
     			return(
     				<div onClick={this.onClick} className={classes}>
     				<span className="gridnum">{this.props.gridnum.gridnum}</span>

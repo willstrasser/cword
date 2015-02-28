@@ -5,10 +5,18 @@
 	height:1em;
 	outline: 1px solid rgba(0,0,0,.5);
 }
-.highlighted .letter-holder input{
-	outline: 1px solid rgba(0,0,0,1);
-	background-color: rgba(55,55,255,.07);
+input{
+	background-color: transparent;;
 }
+.op-filled .letter-holder {
+	background-color: rgba(255,55,55,.15);
+}
+
+.highlighted {
+	outline: 1px solid black;
+	background-color: rgba(55,55,255,.075);
+}
+
 .tile .letter-holder{
 	font-size: .6em;
 }

@@ -90,11 +90,13 @@ app.route('/').get(function(req, res, next){
 });
 
 io.on('connection', function(socket){
-	//clone the model object and clear 'answers' and 'grid'
+	//TODO:clone the model object and clear 'answers' and 'grid'
 	io.emit('initPuzzle',model);
+	var myBoard = model.initialBoardState;
 	socket.on('playerAnswer', function(update){
-		model.initialBoardState = replaceOneChar(model.initialBoardState,update[1],update[0]);
-		io.emit('updateAnswer', update);
+		console.log('socket.id',socket.id);
+		myBoard = replaceOneChar(myBoard,update[1],update[0]);
+		socket.broadcast.emit('opUpdate', update);
 	});
 });
 
