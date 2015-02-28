@@ -90,6 +90,7 @@ app.route('/').get(function(req, res, next){
 });
 
 io.on('connection', function(socket){
+	//clone the model object and clear 'answers' and 'grid'
 	io.emit('initPuzzle',model);
 	socket.on('playerAnswer', function(update){
 		model.initialBoardState = replaceOneChar(model.initialBoardState,update[1],update[0]);

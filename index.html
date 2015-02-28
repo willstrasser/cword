@@ -56,6 +56,9 @@
                     console.log(update);
                     _this.refs['t'+(update[0]-1)].setState({playerAnswer:update[1]});
                 });
+                $(window).keyPress(function(e){
+                    console.log(e)
+                });
 				return {
                     focusedTile:this.refs['t'+this.props.puzzle.clues.across[0].tiles[0]],
                     isVertical:false
