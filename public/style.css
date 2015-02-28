@@ -37,8 +37,10 @@
 .clueBoard{
 	font-size: .4em;
 }
+html, input{
+	font-family: 'Raleway','LucidaGrande',sans-serif;
+}
 html{
-	font-family: 'LucidaGrande';
 	font-size: 40px;
 	text-align: center;
 	line-height: 1em;

@@ -6,15 +6,14 @@
     <script src="http://code.jquery.com/jquery-1.10.0.min.js"></script>
     <script src="http://underscorejs.org/underscore-min.js"/></script>
     <script src="https://cdn.socket.io/socket.io-1.2.0.js"></script>
-    <script src="model.js"></script>
     <script src="prepModel.js"></script>
+    <link href='http://fonts.googleapis.com/css?family=Raleway' rel='stylesheet' type='text/css'>
     <link rel="stylesheet" href="style.css" />
 </head>
 <body>
     <div id="content"></div>
     <script type="text/jsx">
         var socket = io();
-        puz = prepModel(puz);
 
         var Puzzle = React.createClass({
             getInitialState: function() {
@@ -53,29 +52,25 @@
     	var PuzzleBoard = React.createClass({
     		getInitialState: function() {
                 _this = this;
-                socket.on('updateAnswer', function(newAnswers){
-                    var count = 0;
-                    _.each(_this.refs,function(tile){
-                        tile.setState({playerAnswer:newAnswers[count]});
-                        count++;
-                    });
+                socket.on('updateAnswer', function(update){
+                    console.log(update);
+                    _this.refs['t'+(update[0]-1)].setState({playerAnswer:update[1]});
                 });
-
 				return {
                     focusedTile:this.refs['t'+this.props.puzzle.clues.across[0].tiles[0]],
                     isVertical:false
                 };
 			},
             sendPlayerAnswer:function(){
-                var playerAnswers=[];
-                _.each(this.refs,function(tile){
-                    playerAnswers.push(tile.state.playerAnswer);
-                })
-                socket.emit('playerAnswer', playerAnswers);
+                // var playerAnswers=[];
+                // _.each(this.refs,function(tile){
+                    // playerAnswers.push(tile.state.playerAnswer||' ');
+                // })
+                // socket.emit('playerAnswer', playerAnswers.join(''));/
             },
             nextTile:function(tile){
                 var next = this.refs['t'+(tile.props.keya+(this.state.isVertical?15:1))];
-                while(next && next.state.playerAnswer!==""){
+                while(next && next.state.playerAnswer!==" "){
                     if(next.state.playerAnswer==='.') next = this.nextWord(next);
                     else next = this.nextTile(next);
                 }
@@ -97,7 +92,6 @@
 			},
             onTileClick:function(clickedTile){
                 if(this.state.focusedTile===clickedTile){
-                    // console.log('flipped');
                     this.setState({isVertical:!this.state.isVertical});
                 }
                 this.props.onClueChange(clickedTile.props.gridnum.clues[(this.state.isVertical?1:0)]);
@@ -107,16 +101,16 @@
     			var n=-1;
                 var isClueStart;
                 var _this = this;
-    			var tiles = _.zip(this.props.puzzle.grid,this.props.puzzle.gridnums).map(function(tile){
+    			var tiles = _.zip(this.props.puzzle.initialBoardState,this.props.puzzle.gridnums).map(function(tile){
     				n++;
                     isClueStart = tile[1].gridnum!="0";
                     tile[1].gridnum=isClueStart?tile[1].gridnum:'';
                     var highlighted = _.contains(_this.props.curClue.tiles,n);
-    				if(tile[0]!=='.'){return(
+                    if(tile[0]!=='.'){return(
     					<Tile ref={'t'+n} 
                             keya={n}
                             highlighted={highlighted}
-                            answer={tile[0]}
+                            initial={tile[0]}
                             isClueStart={isClueStart}
                             gridnum={tile[1]} 
                             onLetterChange={_this.autoForwardFocus}
@@ -148,10 +142,13 @@
 
     	var Tile = React.createClass({
     		getInitialState: function() {
-				return {playerAnswer:''};
+				return {playerAnswer:this.props.initial};
 			},
     		handleChange:function(event){
-    			this.setState({playerAnswer:event.target.value.toUpperCase()}, this.props.onLetterChange);
+    			this.setState({playerAnswer:event.target.value.toUpperCase()}, function(){
+                    socket.emit('playerAnswer', [this.props.keya+1,this.state.playerAnswer]);
+                    this.props.onLetterChange.call();
+                });
     		},
     		setFocus:function(){
     			if(this.refs.tileInput.getDOMNode()!=document.activeElement){
@@ -184,10 +181,13 @@
     			);
     		}
     	});
-    	React.render(
-    		<Puzzle puzzle={puz} />,
-    		document.getElementById('content')
-    	);
+
+        socket.on('initPuzzle', function(puz){
+       	    React.render(
+       	    	<Puzzle puzzle={puz} />,
+    	   	    document.getElementById('content')
+    	    );
+        });
     </script>
 </body>
 </html>
