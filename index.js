@@ -30,10 +30,11 @@ function prepModel(puz){
 	puz.clues.across = _.map(puz.clues.across,function(str,n){
 		var clueNum = parseInt(str.substr(0,str.indexOf('.')));
 		var firstTile = puz.gridnums.indexOf(clueNum);
-		var tilesArr = [];
-		for (var i = 0; i<puz.answers.across[n].length; i++) {
-			tilesArr.push(i+firstTile);
-		};
+		var tilesArr = [firstTile];
+		var i=1;
+			while (firstTile+i<puz.grid.length && puz.grid[firstTile+i]!=".") {
+				tilesArr.push(firstTile+i++);
+			};
 		return({
 			'cluestr':str.substr(str.indexOf('.')+2),
 			'dir':'Across',
@@ -46,9 +47,10 @@ function prepModel(puz){
 	puz.clues.down = _.map(puz.clues.down,function(str,n){
 		var clueNum = parseInt(str.substr(0,str.indexOf('.')));
 		var firstTile = puz.gridnums.indexOf(clueNum);
-		var tilesArr = [];
-		for (var i = 0; i<puz.answers.down[n].length; i++) {
-			tilesArr.push((i*15)+firstTile);
+		var tilesArr = [firstTile];
+		var i=1;
+		while (firstTile+(i*puz.size.cols)<puz.grid.length && puz.grid[firstTile+(i*puz.size.cols)]!=".") {
+			tilesArr.push(firstTile+(puz.size.cols*i++));
 		};
 		return({
 			'cluestr':str.substr(str.indexOf('.')+2),
@@ -83,18 +85,19 @@ function prepModel(puz){
 	return puz;
 }
 
-model.initialBoardState = model.grid.join('').replace(/[a-zA-z]/g,' ');
+model.initialBoardState = _.map(model.grid,function(tile){
+	return tile=='.'?tile:' ';
+});
+model.initialBoardState = model.initialBoardState.join('');
 
 app.route('/').get(function(req, res, next){
   res.sendFile(path.join(__dirname,'index.html'));
 });
 
 io.on('connection', function(socket){
-	//TODO:clone the model object and clear 'answers' and 'grid'
 	io.emit('initPuzzle',model);
 	var myBoard = model.initialBoardState;
 	socket.on('playerAnswer', function(update){
-		console.log('socket.id',socket.id);
 		myBoard = replaceOneChar(myBoard,update[1],update[0]);
 		update[1] = update[1]!=' ';
 		socket.broadcast.emit('opUpdate', update);

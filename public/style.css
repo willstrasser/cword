@@ -3,7 +3,7 @@
 	position: relative;
 	width:1em;
 	height:1em;
-	outline: 1px solid rgba(0,0,0,.5);
+	outline: 1px solid black;
 }
 input{
 	background-color: transparent;;
@@ -13,12 +13,15 @@ input{
 }
 
 .highlighted {
-	outline: 1px solid black;
 	background-color: rgba(55,55,255,.075);
+}
+.focused {
+	background-color: rgba(55,55,255,.3);
 }
 
 .tile .letter-holder{
 	font-size: .6em;
+	height:1rem;
 }
 
 .tile .letter-holder input{
@@ -40,7 +43,11 @@ input{
 	display: block;
 }
 .puzzleBoard{
-	width:15em;
+	overflow: hidden;
+	border: 2px solid black;
+	margin: 1em;
+	margin-top: 0;
+	float: left;
 }
 .clueBoard{
 	font-size: .4em;
@@ -52,7 +59,7 @@ html, input{
 	font-family: 'Raleway','LucidaGrande',sans-serif;
 }
 html{
-	font-size: 30px;
+	font-size: 33px;
 	text-align: center;
 	line-height: 1em;
 }
