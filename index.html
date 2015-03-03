@@ -34,7 +34,9 @@
                             onClueChange={this.setCurClue}
                             curClue={this.state.curClue} 
                             puzzle={this.props.puzzle}/>
-                        <ClueBoard curClue={this.state.curClue} clues={this.props.puzzle.clues}/>
+                        <ClueBoard 
+                            curClue={this.state.curClue}
+                            clues={this.props.puzzle.clues}/>
                     </div>
                 )
             }
@@ -171,17 +173,15 @@
                 });
     			return(
     				<div onClick={this.onClick} className={classes}>
-    				<span className="gridnum">{this.props.gridnum.gridnum}</span>
-    				<div className="letter-holder"> {this.state.entry}
-    				</div>
+        				<span className="gridnum">{this.props.gridnum.gridnum}</span>
+    				    <div className="letter-holder"> {this.state.entry}</div>
     				</div>
     			);
     		}
     	});
 
         socket.on('initPuzzle', function(puz){
-                console.log(puz);
-       	    React.render(
+            React.render(
        	    	<Puzzle puzzle={puz} />,
     	   	    document.getElementById('content')
     	    );
