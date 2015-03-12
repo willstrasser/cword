@@ -4,12 +4,43 @@ var http = require('http').Server(app);
 var path = require('path');
 var _ = require('underscore');
 var io = require('socket.io')(http);
+var cookieParser = require('cookie-parser');
+var session = require('express-session');
+var config = require('./config/config.js');
+var ConnectMongo = require('connect-mongo')(session);
+var mongoose = require('mongoose').connect(config.dbURL);
+var passport = require('passport');
+var FacebookStrategy = require('passport-facebook').Strategy
 
-app.set('port', (process.env.PORT || 3000));
+
+app.use(cookieParser());
+var env = process.env.NODE_ENV || 'development';
+if(env==="development"){
+	app.use(session({secret:config.sessionsecret, saveUninitialized:true, resave:true}));
+}
+else{
+	app.use(session({
+		secret:config.sessionsecret, 
+		store: new ConnectMongo({
+			mongooseConnection:mongoose.connections[0],
+			stringify:true
+		}),
+		saveUninitialized:true, 
+		resave:true}));
+}
+
+app.use(passport.initialize());
+app.use(passport.session());
+
+app.set('views', path.join(__dirname, 'views'));
+app.engine('html', require('hogan-express'));
+app.set('view engine', 'html');
 app.use(express.static(path.join(__dirname,'public')));
 
-var fs = require("fs"),
-    json;
+app.set('port', (process.env.PORT || 3000));
+require('./routes/routes.js')(express,app,passport);
+
+var fs = require("fs");
 
 function readJsonFileSync(filepath, encoding){
     if (typeof (encoding) == 'undefined'){
@@ -24,75 +55,12 @@ function getConfig(file){
     return readJsonFileSync(filepath);
 }
 model = getConfig('public/model.json');
-model = prepModel(model);
+model = require('./modelprep').prepModel(model);
 
-function prepModel(puz){
-	puz.clues.across = _.map(puz.clues.across,function(str,n){
-		var clueNum = parseInt(str.substr(0,str.indexOf('.')));
-		var firstTile = puz.gridnums.indexOf(clueNum);
-		var tilesArr = [firstTile];
-		var i=1;
-			while (firstTile+i<puz.grid.length && puz.grid[firstTile+i]!=".") {
-				tilesArr.push(firstTile+i++);
-			};
-		return({
-			'cluestr':str.substr(str.indexOf('.')+2),
-			'dir':'Across',
-			'cluenum':clueNum,
-			'tiles':tilesArr,
-			'key':n
-		});
-	});
 
-	puz.clues.down = _.map(puz.clues.down,function(str,n){
-		var clueNum = parseInt(str.substr(0,str.indexOf('.')));
-		var firstTile = puz.gridnums.indexOf(clueNum);
-		var tilesArr = [firstTile];
-		var i=1;
-		while (firstTile+(i*puz.size.cols)<puz.grid.length && puz.grid[firstTile+(i*puz.size.cols)]!=".") {
-			tilesArr.push(firstTile+(puz.size.cols*i++));
-		};
-		return({
-			'cluestr':str.substr(str.indexOf('.')+2),
-			'dir':'Down',
-			'cluenum':clueNum,
-			'tiles':tilesArr,
-			'key':n
-		});
-	});
+require('./auth/passportAuth.js')(passport, FacebookStrategy, config, mongoose);
 
-	puz.gridnums = _.map(puz.gridnums,function(i,n){
-		var clues = [];
-		for (var j = puz.clues.across.length - 1; j >= 0; j--) {
-			if(_.contains(puz.clues.across[j].tiles,n)){
-				clues.push(puz.clues.across[j]);
-				break;
-			}
-		};
-		for (var j = puz.clues.down.length - 1; j >= 0; j--) {
-			if(_.contains(puz.clues.down[j].tiles,n)){
-				clues.push(puz.clues.down[j]);
-				break;
-			}
-		};
 
-		return({
-			'gridnum':i,
-			'clues':clues
-		})
-	});
-
-	return puz;
-}
-
-model.initialBoardState = _.map(model.grid,function(tile){
-	return tile=='.'?tile:' ';
-});
-model.initialBoardState = model.initialBoardState.join('');
-
-app.route('/').get(function(req, res, next){
-  res.sendFile(path.join(__dirname,'index.html'));
-});
 
 io.on('connection', function(socket){
 	io.emit('initPuzzle',model);
@@ -110,5 +78,6 @@ function replaceOneChar(s,c,n){
 };
 
 http.listen(app.get('port'), function(){
+	console.log(env);
 	console.log('listening on *:3000');
 });

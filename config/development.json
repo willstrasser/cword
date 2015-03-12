@@ -1,0 +1,9 @@
+{
+	"dbURL":"mongodb://cworduser:hsY-BR2-Zk6-8BF@ds033669.mongolab.com:33669/cword",
+	"sessionsecret":"AWOEIJFODSKJKXCXVOS2345678LKDJFOSKDJFLK",
+	"fb":{
+		"appID":"647094828723923",
+		"appSecret":"078fd0c13eb84b80951b3474f8f5b64d",
+		"callbackURL":"http://localhost:3000/auth/facebook/callback"
+	}
+}
