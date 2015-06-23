@@ -1,16 +1,20 @@
-var express = require('express')
-var	app = express();
-var http = require('http').Server(app);
-var path = require('path');
-var _ = require('underscore');
-var io = require('socket.io')(http);
-var cookieParser = require('cookie-parser');
-var session = require('express-session');
-var config = require('./config/config.js');
-var ConnectMongo = require('connect-mongo')(session);
-var mongoose = require('mongoose').connect(config.dbURL);
-var passport = require('passport');
-var FacebookStrategy = require('passport-facebook').Strategy
+var playersData = [{name:'will'}, {name:'alex'}];
+
+var express = require('express'),
+app = express(),
+http = require('http').Server(app),
+path = require('path'),
+_ = require('underscore'),
+io = require('socket.io')(http),
+sockets = require('./sockets.js')(io,playersData),
+cookieParser = require('cookie-parser'),
+session = require('express-session'),
+config = require('./config/config.js'),
+ConnectMongo = require('connect-mongo')(session),
+mongoose = require('mongoose').connect(config.dbURL),
+passport = require('passport'),
+FacebookStrategy = require('passport-facebook').Strategy
+
 
 
 app.use(cookieParser());
@@ -38,7 +42,8 @@ app.set('view engine', 'html');
 app.use(express.static(path.join(__dirname,'public')));
 
 app.set('port', (process.env.PORT || 3000));
-require('./routes/routes.js')(express,app,passport);
+require('./routes/routes.js')(express,app,passport,config);
+
 
 var fs = require("fs");
 
@@ -67,7 +72,7 @@ io.on('connection', function(socket){
 	var myBoard = model.initialBoardState;
 	socket.on('playerAnswer', function(update){
 		myBoard = replaceOneChar(myBoard,update[1],update[0]);
-		update[1] = update[1]!=' ';
+		// update[1] = update[1]!=' ';
 		socket.broadcast.emit('opUpdate', update);
 	});
 });
@@ -78,6 +83,5 @@ function replaceOneChar(s,c,n){
 };
 
 http.listen(app.get('port'), function(){
-	console.log(env);
 	console.log('listening on *:3000');
 });

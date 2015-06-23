@@ -6,14 +6,12 @@
     <script src="http://code.jquery.com/jquery-1.10.0.min.js"></script>
     <script src="http://underscorejs.org/underscore-min.js"/></script>
     <script src="https://cdn.socket.io/socket.io-1.2.0.js"></script>
-    <!-- // <script src="prepModel.js"></script> -->
     <link href='http://fonts.googleapis.com/css?family=Raleway' rel='stylesheet' type='text/css'>
     <link rel="stylesheet" href="style.css" />
 </head>
 <body>
     <div>
-        <img src="{{user.profilePic}}"/>
-        <span>{{user.fullname}}</span>
+        <!-- <img src="{{user.profilePic}}"/> -->
     </div>
 
     <div id="content"></div>
@@ -22,8 +20,10 @@
 
         var Puzzle = React.createClass({
             getInitialState: function() {
+                console.log(this.props.puzzle);
                 return {
                     curClue:this.props.puzzle.clues.across[0]
+                    // numCols:this.props.puzzel.numCols
                 };
             },
             setCurClue:function(newClue){
@@ -33,7 +33,8 @@
             render:function(){
                 return(
                     <div className="puzzle">
-                        <h6>{this.props.puzzle.title}</h6>
+                        <h6><span>Player: {{user.fullname}}</span></h6>
+                        <h6>Puzzle: {this.props.puzzle.title}</h6>
                         <PuzzleBoard 
                             onClueChange={this.setCurClue}
                             curClue={this.state.curClue} 
@@ -60,7 +61,8 @@
     		getInitialState: function() {
                 _this = this;
                 socket.on('opUpdate', function(update){
-                    _this.refs['t'+(update[0]-1)].setState({opAnswer:update[1]});
+                    // console.log(update);
+                    _this.refs['t'+(update[0]-1)].setState({opAnswer:update[1],entry:update[1]});
                 });
                 $('html').keydown(function(e){
                     // console.log(e.keyCode);
@@ -92,10 +94,10 @@
                 this.setState({focusedTile:newFocus},this.onSetFocus);
             },
             moveFocusUp:function(){
-                this.moveFocusByInt(-21);
+                this.moveFocusByInt(-1*this.props.puzzle.size.cols);
             },
             moveFocusDown:function(){
-                this.moveFocusByInt(21);
+                this.moveFocusByInt(this.props.puzzle.size.cols);
             },
             moveFocusLeft:function(){
                 this.moveFocusByInt(-1);
@@ -162,7 +164,7 @@
 				return {entry:this.props.initial, opAnswer:false};
 			},
             setEntry:function(newValue){
-                this.setState({entry:newValue});
+                this.setState({entry:newValue, opAnswer:false});
                 socket.emit('playerAnswer',[this.props.keya+1, newValue]);
             },
             onClick:function(){

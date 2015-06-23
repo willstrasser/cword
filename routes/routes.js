@@ -1,8 +1,7 @@
-module.exports = function(express,app, passport){
+module.exports = function(express, app, passport, config){
 	var router = express.Router();
-
 	router.get('/',function(req,res,next){
-		res.render('index');
+		res.render('index',{title:'welcome',config:config});
 	})
 
 	function securePages(req,res,next){

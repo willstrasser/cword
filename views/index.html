@@ -1,10 +1,59 @@
 <html>
 <head>
     <title>{{title}}</title>
+    <script src="http://fb.me/react-with-addons-0.12.2.js"></script>
+    <script src="http://fb.me/JSXTransformer-0.12.2.js"></script>
+    <script src="http://code.jquery.com/jquery-1.10.0.min.js"></script>
+    <script src="http://underscorejs.org/underscore-min.js"/></script>
+    <script src="https://cdn.socket.io/socket.io-1.2.0.js"></script>
     <link href='http://fonts.googleapis.com/css?family=Raleway' rel='stylesheet' type='text/css'>
     <link rel="stylesheet" href="style.css" />
 </head>
 <body>
+    <script type="text/jsx">
+        var host = '{{config.host}}';
+        var socket = io.connect(host+'/players');
+
+        socket.on('connect',function(){
+            console.log('connection establishted');
+        });
+
+        socket.on('initPlayerList',function(playersData){
+            var playersData = JSON.parse(playersData);
+            React.render(
+                <PlayerList data={playersData} />,
+                document.getElementById('playerlist')
+            );
+        })
+
+        var PlayerList = React.createClass({
+            render:function(){
+                var players = _.map(this.props.data,function(player){
+                    return(
+                        <Player name={player.name}/>
+                    )
+                });
+                return(
+                    <div>
+<!--
+                        <h6>Players</h6>
+                        {players} hi -->
+                    </div>
+                )
+            }
+        });
+
+        var Player = React.createClass({
+            render:function(){
+                return(
+                    <div>{this.props.name}</div>
+                )
+            }
+        });
+
+    </script>
     <a href="auth/facebook">Log in with Facebook</a>
+    <div id="playerlist">
+    </div>
 </body>
 </html>
